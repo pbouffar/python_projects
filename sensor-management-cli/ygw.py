@@ -9,6 +9,7 @@ Copyright (c) 2025 Cisco Systems, Inc.
 All rights reserved.
 """
 
+import requests
 import argparse
 import json
 import sys
@@ -38,7 +39,7 @@ console = Console()
 # ============================================================================
 
 def send_request(method: str, url: str, body: Optional[Dict] = None, 
-                params: Optional[Dict] = None) -> None:
+                params: Optional[Dict] = None):
     """Send an HTTP request with appropriate headers and log the response."""
     try:
         headers = None

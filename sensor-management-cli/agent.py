@@ -38,11 +38,12 @@ API_URL = "/api/orchestrate/v3/agents"
 # API Request Functions
 # ============================================================================
 
-def send_request(method: str, url: str, body: Optional[Dict] = None) -> None:
+def send_request(method: str, url: str, body: Optional[Dict] = None):
     """Send an HTTP request and log the response."""
     try:
         resp = orchestrator.send_request(method, url, body)
         utils.log_response(resp)
+        return resp
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
         sys.exit(1)

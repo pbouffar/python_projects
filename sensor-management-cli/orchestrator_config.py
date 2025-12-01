@@ -20,8 +20,8 @@ class OrchestratorConfig:
     password: Optional[str] = None
     login_api: Optional[str] | Optional[list] = None
     logout_api: Optional[str] = None
-    tenant_id: str = None
-    user_roles: str = None
+    tenant_id: Optional[str] = None
+    user_roles: Optional[str] = None
 
     def __str__(self):
         output = f"  name: {self.name}\n" \
