@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-#  Copyright (c) 2025 Cisco Systems, Inc.
-#  All rights reserved.
-#
-#  This code is provided under the terms of the Cisco Software License Agreement.
-#  Unauthorized copying, modification, or distribution is strictly prohibited.
-#
-#  Cisco Systems,Inc.
-#  170 West Tasman Drive,San Jose,CA 95134,USA
+"""
+  Copyright (c) 2025 Cisco Systems, Inc.
+  All rights reserved.
+
+  This code is provided under the terms of the Cisco Software License Agreement.
+  Unauthorized copying, modification, or distribution is strictly prohibited.
+
+  Cisco Systems,Inc.
+  170 West Tasman Drive,San Jose,CA 95134,USA
+"""
+
 import argparse
-import requests
 import json
+import requests
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -19,11 +22,11 @@ parser.add_argument("TENANT_IP", nargs="?", help="Tenant IP address", default="1
 parser.add_argument("--raw", "-r", action="store_true", help="Print raw JSON response")
 args = parser.parse_args()
 
-url = f"https://{args.TENANT_IP}"
-uri = "/api/v1/onboarding/tenant-info"
+URL = f"https://{args.TENANT_IP}"
+URI = "/api/v1/onboarding/tenant-info"
 
 try:
-    response = requests.get(url+uri, verify=False)
+    response = requests.get(URL+URI, verify=False)
     data = response.json()
     if args.raw:
         print(json.dumps(data, indent=2))
@@ -32,10 +35,9 @@ try:
             "tenantId": data["data"]["attributes"]["tenantId"],
             "tenantName": data["data"]["attributes"]["tenantName"]
         }
-        output_str = f"URL:        {url}\n" \
+        output_str = f"URL:        {URL}\n" \
                      f"tenantId:   {tenant_info.get('tenantId')}\n" \
                      f"tenantName: {tenant_info.get('tenantName')}"
         print(output_str)
 except requests.exceptions.ConnectionError as e:
     print(str(e))
-

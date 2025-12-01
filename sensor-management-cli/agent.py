@@ -10,6 +10,7 @@
   170 West Tasman Drive,San Jose,CA 95134,USA
 """
 
+import traceback
 import argparse
 import json
 import sys
@@ -134,7 +135,7 @@ def print_sessions_status(raw: bool = False) -> None:
     """Display status for all sessions in a formatted table."""
     try:
         response = get_sessions_status()
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Failed to fetch sessions status (Status: {response.status_code})")
             utils.log_response(response)
@@ -145,16 +146,16 @@ def print_sessions_status(raw: bool = False) -> None:
             return
 
         sessions = response.json().get('data', [])
-        
+
         if not sessions:
             console.print("[yellow]No sessions found.[/yellow]\n")
             return
 
         # Create a rich table
         table = Table(
-            title="Sessions Status", 
-            box=box.ROUNDED, 
-            show_header=True, 
+            title="Sessions Status",
+            box=box.ROUNDED,
+            show_header=True,
             header_style="bold cyan"
         )
         table.add_column("Session ID", style="green", width=40)
@@ -165,7 +166,7 @@ def print_sessions_status(raw: bool = False) -> None:
             session_id = session.get('sessionId', 'N/A')
             status = session.get('status', 'N/A')
             status_message = session.get('statusMessage', 'N/A')
-            
+
             # Color code status
             if status.lower() == 'active':
                 status_style = "[green]" + status + "[/green]"
@@ -173,7 +174,7 @@ def print_sessions_status(raw: bool = False) -> None:
                 status_style = "[red]" + status + "[/red]"
             else:
                 status_style = status
-                
+
             table.add_row(session_id, status_style, status_message)
 
         console.print(table)
@@ -187,13 +188,13 @@ def print_session_status(session_id: str) -> None:
     """Display status for a specific session."""
     try:
         response = get_session_status(session_id)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Session '{session_id}' not found or request failed")
             return
-            
+
         utils.log_response(response)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -202,14 +203,14 @@ def print_sessions() -> None:
     """Display all sessions."""
     try:
         response = get_sessions()
-        
+
         if not response.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch sessions")
+            console.print("[bold red]Error:[/bold red] Failed to fetch sessions")
             utils.log_response(response)
             return
-            
+
         utils.log_response(response)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -218,14 +219,14 @@ def print_agents() -> None:
     """Display all agents in a formatted table."""
     try:
         response = get_agents()
-        
+
         if not response.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch agents")
+            console.print("[bold red]Error:[/bold red] Failed to fetch agents")
             utils.log_response(response)
             return
 
         agents = response.json().get('data', [])
-        
+
         if not agents:
             console.print("[yellow]No agents found.[/yellow]\n")
             return
@@ -248,15 +249,15 @@ def print_agents() -> None:
             )
             for agent in agents
         ]
-        
+
         # Sort by type and metadata
         agents_info.sort(key=lambda a: ((a[2] or ""), _meta_sort_value(a[5])))
 
         # Create a rich table
         table = Table(
-            title="Registered Agents", 
-            box=box.ROUNDED, 
-            show_header=True, 
+            title="Registered Agents",
+            box=box.ROUNDED,
+            show_header=True,
             header_style="bold cyan"
         )
         table.add_column("ID", style="green", width=36)
@@ -273,7 +274,7 @@ def print_agents() -> None:
             status = str(agent[3]) if agent[3] else 'N/A'
             state = str(agent[4]) if agent[4] else 'N/A'
             metadata = str(agent[5]) if agent[5] else 'N/A'
-            
+
             # Color code status
             if status.lower() == 'online':
                 status_display = f"[green]{status}[/green]"
@@ -281,7 +282,7 @@ def print_agents() -> None:
                 status_display = f"[red]{status}[/red]"
             else:
                 status_display = status
-            
+
             table.add_row(agent_id, name, agent_type, status_display, state, metadata)
 
         console.print(table)
@@ -295,13 +296,13 @@ def print_agent(agent_id: str) -> None:
     """Display a specific agent."""
     try:
         response = get_agent(agent_id)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Agent '{agent_id}' not found")
             return
-            
+
         utils.log_response(response)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -310,13 +311,13 @@ def print_agent_config(agent_id: str) -> None:
     """Display configuration for a specific agent."""
     try:
         response = get_agent_config(agent_id)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Configuration for agent '{agent_id}' not found")
             return
-            
+
         utils.log_response(response)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -325,14 +326,14 @@ def print_agents_config() -> None:
     """Display configuration for all agents."""
     try:
         response = get_agents()
-        
+
         if not response.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch agents")
+            console.print("[bold red]Error:[/bold red] Failed to fetch agents")
             utils.log_response(response)
             return
 
         agents = response.json().get('data', [])
-        
+
         if not agents:
             console.print("[yellow]No agents found.[/yellow]\n")
             return
@@ -345,13 +346,13 @@ def print_agents_config() -> None:
         for data in agents:
             agent_id = data['id']
             agent_name = data.get('attributes', {}).get('agentName', 'Unknown')
-            
+
             console.print(f"\n[bold green]Agent:[/bold green] {agent_name} (ID: {agent_id})")
             console.rule(style="green")
-            
+
             response = get_agent_config(agent_id)
             utils.log_response(response)
-            
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -360,21 +361,21 @@ def delete_sessions(prefix: str) -> None:
     """Delete sessions matching a prefix."""
     try:
         response = get_sessions()
-        
+
         if not response.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch sessions")
+            console.print("[bold red]Error:[/bold red] Failed to fetch sessions")
             utils.log_response(response)
             return
 
         data = response.json().get('data', [])
         sessions = [
-            session.get('attributes', {}).get('session', {}).get('sessionId') 
+            session.get('attributes', {}).get('session', {}).get('sessionId')
             for session in data
         ]
-        
+
         # Filter sessions by prefix
         sessions_to_delete = [
-            session_id for session_id in sessions 
+            session_id for session_id in sessions
             if prefix == "all" or session_id.startswith(prefix)
         ]
 
@@ -389,7 +390,7 @@ def delete_sessions(prefix: str) -> None:
         # Confirm deletion
         console.print("\n[bold red]⚠ This action cannot be undone![/bold red]")
         confirm = console.input("[bold]Proceed with deletion? (yes/no): [/bold]")
-        
+
         if confirm.lower() not in ['yes', 'y']:
             console.print("[yellow]Deletion cancelled.[/yellow]")
             return
@@ -399,7 +400,7 @@ def delete_sessions(prefix: str) -> None:
         for session_id in sessions_to_delete:
             console.print(f"[cyan]Deleting session:[/cyan] {session_id} ...", end=" ")
             response = delete_session(session_id)
-            
+
             if response.ok:
                 console.print("[green]✓ Success[/green]")
                 success_count += 1
@@ -419,27 +420,27 @@ def delete_sessions(prefix: str) -> None:
 
 class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom formatter for better help text layout."""
-    
+
     def __init__(self, prog, indent_increment=2, max_help_position=35, width=None):
         super().__init__(prog, indent_increment, max_help_position, width)
-    
+
     def _format_action_invocation(self, action):
         """Format action invocation to add color to metavars."""
         if not action.option_strings:
             default = self._get_default_metavar_for_positional(action)
             metavar, = self._metavar_formatter(action, default)(1)
             return metavar
+
+        parts = []
+        if action.nargs == 0:
+            parts.extend(action.option_strings)
         else:
-            parts = []
-            if action.nargs == 0:
-                parts.extend(action.option_strings)
-            else:
-                default = self._get_default_metavar_for_optional(action)
-                args_string = self._format_args(action, default)
-                for option_string in action.option_strings:
-                    parts.append(option_string)
-                return '%s %s' % (', '.join(parts), args_string)
-            return ', '.join(parts)
+            default = self._get_default_metavar_for_optional(action)
+            args_string = self._format_args(action, default)
+            for option_string in action.option_strings:
+                parts.append(option_string)
+            return f"{', '.join(parts)} {args_string}"
+        return ', '.join(parts)
 
 
 # ============================================================================
@@ -448,7 +449,7 @@ class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
 
 def build_parser() -> argparse.ArgumentParser:
     """Build and configure the argument parser."""
-    
+
     # Create description with visual formatting
     description = f"""
 ╔══════════════════════════════════════════════════════════════════════════╗
@@ -457,10 +458,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 API Endpoint: {orchestrator.get_url_info()}
 """
-    
+
     epilog = """
 """
-    
+
     parser = argparse.ArgumentParser(
         prog='agent.py',
         description=description,
@@ -482,11 +483,11 @@ API Endpoint: {orchestrator.get_url_info()}
 
 def add_commands(subparsers):
     """Add all subcommands to the parser."""
-    
+
     # ========================================================================
     # Generic HTTP Methods
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get",
         help="Perform a GET request to a specified URI",
@@ -535,7 +536,7 @@ def add_commands(subparsers):
     # ========================================================================
     # Session Management Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_sessions",
         help="Retrieve all active sessions",
@@ -581,7 +582,7 @@ You will be prompted for confirmation before deletion.""",
     # ========================================================================
     # Agent Management Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_agents",
         help="Retrieve all registered agents",
@@ -624,14 +625,14 @@ You will be prompted for confirmation before deletion.""",
 def main():
     """Main entry point for the CLI application."""
     parser = build_parser()
-    
+
     # Show help if no arguments provided
     if len(sys.argv) == 1:
         parser.print_help()
         return
 
     args = parser.parse_args()
-    
+
     # Execute the command if it has a function
     if hasattr(args, "func"):
         try:
@@ -640,17 +641,16 @@ def main():
                 f"[bold cyan]Connecting to:[/bold cyan] {orchestrator.get_url_info()}",
                 border_style="cyan"
             ))
-            
+
             orchestrator.login()
             args.func(args)
             orchestrator.logout()
-            
+
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user.[/yellow]")
             sys.exit(0)
         except Exception as e:
             console.print(f"\n[bold red]Unexpected error:[/bold red] {str(e)}")
-            import traceback
             if '--debug' in sys.argv:
                 traceback.print_exc()
             sys.exit(1)

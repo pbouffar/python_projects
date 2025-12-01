@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-Analytics REST API CLI Tool
+  Copyright (c) 2025 Cisco Systems, Inc.
+  All rights reserved.
 
-A command-line interface for interacting with the Analytics REST API.
-Provides commands for managing policies, monitored objects, metadata, and more.
+  This code is provided under the terms of the Cisco Software License Agreement.
+  Unauthorized copying, modification, or distribution is strictly prohibited.
 
-Copyright (c) 2025 Cisco Systems, Inc.
-All rights reserved.
+  Cisco Systems,Inc.
+  170 West Tasman Drive,San Jose,CA 95134,USA
 """
 
+import traceback
 import argparse
 import json
 import sys
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 import urllib3
 
 from rich.console import Console
@@ -59,21 +61,21 @@ def print_alerting_policy_with_tag(tag: str) -> None:
     """Display alerting policies with a specific tag."""
     try:
         response = get_alerting_policy_with_tag(tag)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Failed to fetch alerting policies with tag '{tag}'")
             utils.log_response(response)
             return
-            
+
         policies = response.json().get('data', [])
-        
+
         if not policies:
             console.print(f"[yellow]No alerting policies found with tag '{tag}'[/yellow]")
             return
-        
+
         console.print(f"\n[bold cyan]Alerting Policies with tag '{tag}':[/bold cyan]")
         utils.log_response(response)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -88,18 +90,18 @@ def print_alerting_policies() -> None:
     """Display all alerting policies."""
     try:
         response = get_alerting_policies()
-        
+
         if not response.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch alerting policies")
+            console.print("[bold red]Error:[/bold red] Failed to fetch alerting policies")
             utils.log_response(response)
             return
-        
+
         policies = response.json().get('data', [])
-        
+
         if not policies:
             console.print("[yellow]No alerting policies found[/yellow]")
             return
-        
+
         # Create a rich table
         table = Table(
             title=f"Alerting Policies ({len(policies)} total)",
@@ -111,13 +113,13 @@ def print_alerting_policies() -> None:
         table.add_column("Name", style="magenta", width=30)
         table.add_column("Status", style="yellow", width=12)
         table.add_column("Tags", style="blue", no_wrap=False)
-        
+
         for policy in policies:
             policy_id = str(policy.get('id', 'N/A'))
             name = policy.get('attributes', {}).get('name', 'N/A')
             status = policy.get('attributes', {}).get('status', 'N/A')
             tags = ', '.join(policy.get('attributes', {}).get('tags', []))
-            
+
             # Color code status
             if status.lower() == 'enabled':
                 status_display = f"[green]{status}[/green]"
@@ -125,12 +127,12 @@ def print_alerting_policies() -> None:
                 status_display = f"[red]{status}[/red]"
             else:
                 status_display = status
-            
+
             table.add_row(policy_id, name, status_display, tags)
-        
+
         console.print(table)
         console.print()
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -155,31 +157,31 @@ def delete_all_policies() -> None:
     try:
         console.print("[bold cyan]Fetching all policies...[/bold cyan]")
         get_resp = get_alerting_policies()
-        
+
         if not get_resp.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch policies")
+            console.print("[bold red]Error:[/bold red] Failed to fetch policies")
             utils.log_response(get_resp)
             return
-        
+
         policies = get_resp.json().get('data', [])
         policy_ids = [policy['id'] for policy in policies]
-        
+
         if not policy_ids:
             console.print("[yellow]No policies found to delete[/yellow]")
             return
-        
+
         console.print(f"[bold yellow]Found {len(policy_ids)} policy/policies:[/bold yellow]")
         for pid in policy_ids:
             console.print(f"  • {pid}")
-        
+
         # Confirm deletion
         console.print("\n[bold red]⚠ This action cannot be undone![/bold red]")
         confirm = console.input("[bold]Proceed with deletion? (yes/no): [/bold]")
-        
+
         if confirm.lower() not in ['yes', 'y']:
             console.print("[yellow]Deletion cancelled.[/yellow]")
             return
-        
+
         # Delete policies
         with Progress(
             SpinnerColumn(),
@@ -187,32 +189,32 @@ def delete_all_policies() -> None:
             console=console
         ) as progress:
             task = progress.add_task("[cyan]Deleting policies...", total=len(policy_ids) * 2)
-            
+
             for policy_id in policy_ids:
                 # Try v2 API
                 progress.update(task, description=f"[cyan]Deleting {policy_id} (v2)...")
                 del_resp_v2 = delete_alerting_policy_v2(policy_id)
-                
+
                 if del_resp_v2.ok:
                     console.print(f"[green]✓[/green] Deleted {policy_id} via v2 API")
                 else:
                     console.print(f"[yellow]⚠[/yellow] v2 deletion failed for {policy_id}: {del_resp_v2.status_code}")
-                
+
                 progress.advance(task)
-                
+
                 # Try v3 API
                 progress.update(task, description=f"[cyan]Deleting {policy_id} (v3)...")
                 del_resp_v3 = delete_alerting_policy_v3(policy_id, ignore_alerts=True)
-                
+
                 if del_resp_v3.ok:
                     console.print(f"[green]✓[/green] Deleted {policy_id} via v3 API")
                 else:
                     console.print(f"[yellow]⚠[/yellow] v3 deletion failed for {policy_id}: {del_resp_v3.status_code}")
-                
+
                 progress.advance(task)
-        
-        console.print(f"\n[bold green]Policy deletion completed![/bold green]")
-        
+
+        console.print("\n[bold green]Policy deletion completed![/bold green]")
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -243,11 +245,11 @@ def get_monitored_object(object_id: str):
     """Get a specific monitored object."""
     url = f"/api/v2/monitored-objects/{object_id}"
     response = send_request("GET", url)
-    
+
     if not response.ok:
         console.print(f"[bold red]Error:[/bold red] Monitored object '{object_id}' not found")
         return response
-    
+
     utils.log_response(response)
     return response
 
@@ -256,17 +258,17 @@ def get_monitored_objects():
     """Get all monitored objects."""
     url = "/api/v2/monitored-objects"
     response = send_request("GET", url)
-    
+
     if not response.ok:
-        console.print(f"[bold red]Error:[/bold red] Failed to fetch monitored objects")
+        console.print("[bold red]Error:[/bold red] Failed to fetch monitored objects")
         return response
-    
+
     objects = response.json().get('data', [])
-    
+
     if not objects:
         console.print("[yellow]No monitored objects found[/yellow]")
         return response
-    
+
     # Create a rich table
     table = Table(
         title=f"Monitored Objects ({len(objects)} total)",
@@ -277,17 +279,17 @@ def get_monitored_objects():
     table.add_column("ID", style="green", width=40)
     table.add_column("Type", style="blue", width=20)
     table.add_column("Name", style="magenta", no_wrap=False)
-    
+
     for obj in objects:
         obj_id = str(obj.get('id', 'N/A'))
         obj_type = obj.get('type', 'N/A')
         obj_name = obj.get('attributes', {}).get('name', 'N/A')
-        
+
         table.add_row(obj_id, obj_type, obj_name)
-    
+
     console.print(table)
     console.print()
-    
+
     return response
 
 
@@ -317,11 +319,11 @@ def get_metadata_mapping():
     """Get metadata category mappings."""
     url = "/api/v2/metadata-category-mappings/activeMetrics"
     response = send_request("GET", url)
-    
+
     if not response.ok:
-        console.print(f"[bold red]Error:[/bold red] Failed to fetch metadata mapping")
+        console.print("[bold red]Error:[/bold red] Failed to fetch metadata mapping")
         return response
-    
+
     utils.log_response(response)
     return response
 
@@ -342,14 +344,14 @@ def print_tenant_metadata(tenant_id: str) -> None:
     """Display tenant metadata."""
     try:
         response = get_tenant_metadata(tenant_id)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Failed to fetch tenant metadata for '{tenant_id}'")
             return
-        
+
         console.print(f"\n[bold cyan]Tenant Metadata for {tenant_id}:[/bold cyan]")
         utils.log_response(response)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -358,50 +360,50 @@ def update_tenant_metadata(tenant_id: str, data: Dict[str, Any]):
     """Update tenant metadata."""
     url = f"/api/v2/tenant-metadata/{tenant_id}"
     response = orchestrator.patch(url, body=data)
-    
+
     if not response.ok:
         utils.log_response(response)
-    
+
     return response
 
 
-def set_tenant_metadata_storeMetadataValueCaseSensitive_to_true() -> None:
+def set_tenant_metadata_store_metadata_value_casesensitive_to_true() -> None:
     """Set storeMetadataValueCaseSensitive to true in tenant metadata."""
     try:
         tenant_id = orchestrator.get_tenant_id()
         console.print(f"[cyan]Fetching tenant metadata for {tenant_id}...[/cyan]")
-        
+
         resp = get_tenant_metadata(tenant_id)
         if not resp.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch tenant metadata")
+            console.print("[bold red]Error:[/bold red] Failed to fetch tenant metadata")
             utils.log_response(resp)
             return
-        
+
         metadata = json.loads(resp.content)
         store_metadata_value_case_sensitive = (
             metadata.get('data', {})
             .get('attributes', {})
             .get('storeMetadataValueCaseSensitive')
         )
-        
+
         if store_metadata_value_case_sensitive is None or store_metadata_value_case_sensitive is False:
             console.print("[yellow]Setting storeMetadataValueCaseSensitive to true...[/yellow]")
             metadata['data']['attributes']['storeMetadataValueCaseSensitive'] = True
-            
+
             resp = update_tenant_metadata(tenant_id, metadata)
             if resp.ok:
                 console.print(
-                    f"[bold green]✓ Successfully set [bold]storeMetadataValueCaseSensitive[/bold] to true.[/bold green]"
+                    "[bold green]✓ Successfully set [bold]storeMetadataValueCaseSensitive[/bold] to true.[/bold green]"
                 )
             else:
-                console.print(f"[bold red]Error:[/bold red] Failed to update tenant metadata")
+                console.print("[bold red]Error:[/bold red] Failed to update tenant metadata")
                 utils.log_response(resp)
         else:
             console.print(
-                f"[bold cyan]ℹ[/bold cyan] [bold]storeMetadataValueCaseSensitive[/bold] is already set to "
+                "[bold cyan]ℹ[/bold cyan] [bold]storeMetadataValueCaseSensitive[/bold] is already set to "
                 f"{'[green]true[/green]' if store_metadata_value_case_sensitive else '[red]false[/red]'}"
             )
-    
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -416,26 +418,26 @@ def verify_metadata_categories() -> None:
     """Verify that required metadata categories exist."""
     try:
         console.print("[cyan]Verifying metadata categories...[/cyan]\n")
-        
+
         resp = get_metadata_categories()
         if not resp.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch metadata categories")
+            console.print("[bold red]Error:[/bold red] Failed to fetch metadata categories")
             return
-        
+
         data = json.loads(resp.content).get('data', {}).get('attributes', {}).get('metadataCategoryMap')
         expected = ["service_id", "ne_id_sender", "service_name", "ne_id_reflector"]
-        
+
         if not data:
             console.print("[yellow]No metadata categories found[/yellow]")
             return
-        
+
         # Find active categories
         found = []
         for key in data.keys():
             is_active = data[key].get('isActive')
             if is_active:
                 found.append(data[key].get('name'))
-        
+
         # Create results table
         table = Table(
             title="Metadata Category Verification",
@@ -445,16 +447,16 @@ def verify_metadata_categories() -> None:
         )
         table.add_column("Category", style="blue", width=30)
         table.add_column("Status", style="white", width=15)
-        
+
         for category in expected:
             if category in found:
                 table.add_row(category, "[green]✓ Found[/green]")
             else:
                 table.add_row(category, "[red]✗ Missing[/red]")
-        
+
         console.print(table)
         console.print()
-        
+
         # Summary
         not_found = [x for x in expected if x not in found]
         if not_found:
@@ -465,8 +467,8 @@ def verify_metadata_categories() -> None:
             for cat in not_found:
                 console.print(f"  • {cat}")
         else:
-            console.print(f"[bold green]PASS![/bold green] All expected metadata categories exist.")
-        
+            console.print("[bold green]PASS![/bold green] All expected metadata categories exist.")
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -496,18 +498,18 @@ def verify_twampsf_metrics() -> None:
     """Verify that required TWAMP-SF metrics are enabled."""
     try:
         console.print("[cyan]Verifying TWAMP-SF metrics...[/cyan]\n")
-        
+
         resp = get_ingestion_profiles()
         if not resp.ok:
-            console.print(f"[bold red]Error:[/bold red] Failed to fetch ingestion profiles")
+            console.print("[bold red]Error:[/bold red] Failed to fetch ingestion profiles")
             return
-        
+
         data = json.loads(resp.content).get('data', [])
-        
+
         if not data:
             console.print("[yellow]No ingestion profiles found[/yellow]")
             return
-        
+
         # Find enabled TWAMP-SF metrics
         found = []
         for item in data:
@@ -515,16 +517,16 @@ def verify_twampsf_metrics() -> None:
             if metrics:
                 for key in metrics:
                     if key == "accedian-twamp":
-                        metricMap = (
+                        metric_map = (
                             metrics[key]
                             .get('monitoredObjectTypeMap', {})
                             .get('twamp-sf', {})
                             .get('metricMap', {})
                         )
-                        for metric_key in metricMap:
-                            if metricMap[metric_key] is True:
+                        for metric_key in metric_map:
+                            if metric_map[metric_key] is True:
                                 found.append(metric_key)
-        
+
         # Create results table
         table = Table(
             title=f"TWAMP-SF Metrics Verification ({len(EXPECTED_TWAMPSF_METRICS)} total)",
@@ -534,16 +536,16 @@ def verify_twampsf_metrics() -> None:
         )
         table.add_column("Metric", style="blue", width=25)
         table.add_column("Status", style="white", width=15)
-        
+
         for metric in EXPECTED_TWAMPSF_METRICS:
             if metric in found:
                 table.add_row(metric, "[green]✓ Enabled[/green]")
             else:
                 table.add_row(metric, "[red]✗ Disabled[/red]")
-        
+
         console.print(table)
         console.print()
-        
+
         # Summary
         not_found = [x for x in EXPECTED_TWAMPSF_METRICS if x not in found]
         if not_found:
@@ -553,8 +555,8 @@ def verify_twampsf_metrics() -> None:
             for metric in not_found:
                 console.print(f"  • {metric}")
         else:
-            console.print(f"[bold green]PASS![/bold green] All expected TWAMP-SF metrics are enabled.")
-        
+            console.print("[bold green]PASS![/bold green] All expected TWAMP-SF metrics are enabled.")
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -565,7 +567,7 @@ def verify_twampsf_metrics() -> None:
 
 class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom formatter for better help text layout."""
-    
+
     def __init__(self, prog, indent_increment=2, max_help_position=35, width=None):
         super().__init__(prog, indent_increment, max_help_position, width)
 
@@ -576,7 +578,7 @@ class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
 
 def build_parser() -> argparse.ArgumentParser:
     """Build and configure the argument parser."""
-    
+
     description = f"""
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                    Analytics REST API CLI Tool                           ║
@@ -584,10 +586,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 API Endpoint: {orchestrator.get_url_info()}
 """
-    
+
     epilog = """
 """
-    
+
     parser = argparse.ArgumentParser(
         prog='analytics.py',
         description=description,
@@ -609,11 +611,11 @@ API Endpoint: {orchestrator.get_url_info()}
 
 def add_commands(subparsers):
     """Add all subcommands to the parser."""
-    
+
     # ========================================================================
     # Monitored Objects Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_monitored_object",
         help="Get details for a specific monitored object",
@@ -634,7 +636,7 @@ def add_commands(subparsers):
     # ========================================================================
     # Metadata Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_metadata_mapping",
         help="Get metadata category mappings",
@@ -673,12 +675,12 @@ def add_commands(subparsers):
         description="Sets the storeMetadataValueCaseSensitive attribute to true in tenant metadata.",
         formatter_class=CustomHelpFormatter
     )
-    sp.set_defaults(func=lambda a: set_tenant_metadata_storeMetadataValueCaseSensitive_to_true())
+    sp.set_defaults(func=lambda a: set_tenant_metadata_store_metadata_value_casesensitive_to_true())
 
     # ========================================================================
     # Policy Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "delete_all_policies",
         help="Delete all alerting policies",
@@ -710,7 +712,7 @@ You will be prompted for confirmation before deletion.""",
     # ========================================================================
     # Verification Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "verify_metadata_categories",
         help="Verify required metadata categories",
@@ -747,14 +749,14 @@ Checks {len(EXPECTED_TWAMPSF_METRICS)} metrics including:
 def main():
     """Main entry point for the CLI application."""
     parser = build_parser()
-    
+
     # Show help if no arguments provided
     if len(sys.argv) == 1:
         parser.print_help()
         return
 
     args = parser.parse_args()
-    
+
     # Execute the command if it has a function
     if hasattr(args, "func"):
         try:
@@ -763,18 +765,17 @@ def main():
                 f"[bold cyan]Connecting to:[/bold cyan] {orchestrator.get_url_info()}",
                 border_style="cyan"
             ))
-            
+
             orchestrator.login()
             args.func(args)
             orchestrator.logout()
-            
+
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user.[/yellow]")
             sys.exit(0)
         except Exception as e:
             console.print(f"\n[bold red]Unexpected error:[/bold red] {str(e)}")
             if '--debug' in sys.argv:
-                import traceback
                 traceback.print_exc()
             sys.exit(1)
     else:

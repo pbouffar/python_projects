@@ -1,18 +1,22 @@
-#  Copyright (c) 2025 Cisco Systems, Inc.
-#  All rights reserved.
-#
-#  This code is provided under the terms of the Cisco Software License Agreement.
-#  Unauthorized copying, modification, or distribution is strictly prohibited.
-#
-#  Cisco Systems,Inc.
-#  170 West Tasman Drive,San Jose,CA 95134,USA
+"""
+  Copyright (c) 2025 Cisco Systems, Inc.
+  All rights reserved.
+
+  This code is provided under the terms of the Cisco Software License Agreement.
+  Unauthorized copying, modification, or distribution is strictly prohibited.
+
+  Cisco Systems,Inc.
+  170 West Tasman Drive,San Jose,CA 95134,USA
+"""
 
 import requests
 
 import utils
 from orchestrator_config import OrchestratorConfig
 
+
 class Orchestrator:
+
     token: list[dict] = []
 
     def __init__(self, config: OrchestratorConfig):
@@ -32,7 +36,7 @@ class Orchestrator:
         try:
             token = r.headers["Authorization"]
             self.token.append({"login_api": login_api, "token": token})
-        except KeyError as e:
+        except KeyError:
             self.token.append({"login_api": login_api, "cookies": r.cookies})
         return r.ok
 
@@ -64,8 +68,8 @@ class Orchestrator:
                 self._login(login_api, self.config.username, self.config.password)
         else:
             self._login(self.config.login_api, self.config.username, self.config.password)
-        #print(self.token)
-        return True if len(self.token) > 0 else False
+        # print(self.token)
+        return len(self.token) > 0
 
     def logout(self):
         if self.config.replicated:
@@ -113,7 +117,7 @@ class Orchestrator:
             headers["X-Forwarded-User-Roles"] = self.config.user_roles
         if self._is_auth_token():
             headers["Authorization"] = self._get_auth_token(uri)
-        #else:
+        # else:
         #    raise Exception("token is required")
         if extra_headers:
             headers.update(extra_headers)
@@ -122,26 +126,25 @@ class Orchestrator:
     def is_replicated(self):
         return self.config.replicated
 
-    def send_request(self, method, uri, headers=None, params = None, body=None):
+    def send_request(self, method, uri, headers=None, params=None, body=None):
         url = self.config.url + uri
         resp = requests.request(method, url, headers=self.build_http_headers(uri, headers),
-                                cookies=self._get_auth_cookies(uri), params=params, json=body, verify=False)
-        #utils.log_response(resp)
+                                cookies=self._get_auth_cookies(uri), params=params,
+                                json=body, verify=False)
+        # utils.log_response(resp)
         return resp
 
-    def get(self, uri, headers=None, params = None, body=None):
+    def get(self, uri, headers=None, params=None, body=None):
         return self.send_request("GET", uri, headers, params, body)
 
-    def post(self, uri, headers=None, params = None, body=None):
+    def post(self, uri, headers=None, params=None, body=None):
         return self.send_request("POST", uri, headers, params, body)
 
-    def put(self, uri, headers=None, params = None, body=None):
+    def put(self, uri, headers=None, params=None, body=None):
         return self.send_request("PUT", uri, headers, params, body)
 
-    def patch(self, uri, headers=None, params = None, body=None):
+    def patch(self, uri, headers=None, params=None, body=None):
         return self.send_request("PATCH", uri, headers, params, body=body)
 
-    def delete(self, uri, headers=None, params = None, body=None):
+    def delete(self, uri, headers=None, params=None, body=None):
         return self.send_request("DELETE", uri, headers, params, body)
-
-

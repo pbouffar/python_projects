@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-Sensor Orchestrator API CLI Tool
+  Copyright (c) 2025 Cisco Systems, Inc.
+  All rights reserved.
 
-A command-line interface for interacting with the Sensor Orchestrator API.
-Provides commands for managing Echo, TWAMP, Y.1564, and RFC2544 test sessions.
+  This code is provided under the terms of the Cisco Software License Agreement.
+  Unauthorized copying, modification, or distribution is strictly prohibited.
 
-Copyright (c) 2025 Cisco Systems, Inc.
-All rights reserved.
+  Cisco Systems,Inc.
+  170 West Tasman Drive,San Jose,CA 95134,USA
 """
 
+import traceback
 import argparse
 import json
 import sys
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict
 import urllib3
 
 from rich.console import Console
@@ -20,7 +22,6 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich import box
-from rich.tree import Tree
 
 import utils
 from config import so as orchestrator
@@ -61,20 +62,20 @@ def print_echo_session(identifier: str) -> None:
     try:
         console.print(f"[cyan]Fetching Echo session:[/cyan] {identifier}")
         response = get_echo_session(identifier)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Echo session '{identifier}' not found (Status: {response.status_code})")
             utils.log_response(response)
             return
-        
+
         session_data = response.json()
-        
+
         # Display in a panel with syntax highlighting
         console.print(Panel.fit(
             f"[bold green]Echo Session:[/bold green] {identifier}",
             border_style="green"
         ))
-        
+
         syntax = Syntax(
             json.dumps(session_data, indent=2),
             "json",
@@ -82,7 +83,7 @@ def print_echo_session(identifier: str) -> None:
             line_numbers=True
         )
         console.print(syntax)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -102,20 +103,20 @@ def print_twamp_session(identifier: str) -> None:
     try:
         console.print(f"[cyan]Fetching TWAMP session:[/cyan] {identifier}")
         response = get_twamp_session(identifier)
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] TWAMP session '{identifier}' not found (Status: {response.status_code})")
             utils.log_response(response)
             return
-        
+
         session_data = response.json()
-        
+
         # Display in a panel with syntax highlighting
         console.print(Panel.fit(
             f"[bold blue]TWAMP Session:[/bold blue] {identifier}",
             border_style="blue"
         ))
-        
+
         syntax = Syntax(
             json.dumps(session_data, indent=2),
             "json",
@@ -123,7 +124,7 @@ def print_twamp_session(identifier: str) -> None:
             line_numbers=True
         )
         console.print(syntax)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -143,18 +144,18 @@ def print_all_y1564_sessions() -> None:
     try:
         console.print("[cyan]Fetching Y.1564 sessions...[/cyan]")
         response = get_all_y1564_sessions()
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Failed to fetch Y.1564 sessions (Status: {response.status_code})")
             utils.log_response(response)
             return
-        
+
         content = response.json().get('content', [])
-        
+
         if not content:
             console.print("[yellow]No Y.1564 sessions found.[/yellow]\n")
             return
-        
+
         # Create a rich table
         table = Table(
             title=f"Y.1564 Test Sessions ({len(content)} total)",
@@ -167,13 +168,13 @@ def print_all_y1564_sessions() -> None:
         table.add_column("Name", style="magenta", width=30)
         table.add_column("Status", style="yellow", width=15)
         table.add_column("Type", style="blue", width=20)
-        
+
         for idx, session in enumerate(content, 1):
             session_id = str(session.get('id', 'N/A'))
             name = session.get('name', 'N/A')
             status = session.get('status', 'N/A')
             test_type = session.get('testType', 'N/A')
-            
+
             # Color code status
             if status.lower() in ['active', 'running']:
                 status_display = f"[green]{status}[/green]"
@@ -183,12 +184,12 @@ def print_all_y1564_sessions() -> None:
                 status_display = f"[red]{status}[/red]"
             else:
                 status_display = status
-            
+
             table.add_row(str(idx), session_id, name, status_display, test_type)
-        
+
         console.print(table)
         console.print()
-        
+
         # Option to show detailed JSON
         if console.input("\n[bold]Show detailed JSON? (y/n): [/bold]").lower() == 'y':
             syntax = Syntax(
@@ -198,7 +199,7 @@ def print_all_y1564_sessions() -> None:
                 line_numbers=True
             )
             console.print(syntax)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -218,18 +219,18 @@ def print_all_rfc2544_sessions() -> None:
     try:
         console.print("[cyan]Fetching RFC2544 sessions...[/cyan]")
         response = get_all_rfc2544_sessions()
-        
+
         if not response.ok:
             console.print(f"[bold red]Error:[/bold red] Failed to fetch RFC2544 sessions (Status: {response.status_code})")
             utils.log_response(response)
             return
-        
+
         content = response.json().get('content', [])
-        
+
         if not content:
             console.print("[yellow]No RFC2544 sessions found.[/yellow]\n")
             return
-        
+
         # Create a rich table
         table = Table(
             title=f"RFC2544 Test Sessions ({len(content)} total)",
@@ -242,13 +243,13 @@ def print_all_rfc2544_sessions() -> None:
         table.add_column("Name", style="magenta", width=30)
         table.add_column("Status", style="yellow", width=15)
         table.add_column("Type", style="blue", width=20)
-        
+
         for idx, session in enumerate(content, 1):
             session_id = str(session.get('id', 'N/A'))
             name = session.get('name', 'N/A')
             status = session.get('status', 'N/A')
             test_type = session.get('testType', 'N/A')
-            
+
             # Color code status
             if status.lower() in ['active', 'running']:
                 status_display = f"[green]{status}[/green]"
@@ -258,12 +259,12 @@ def print_all_rfc2544_sessions() -> None:
                 status_display = f"[red]{status}[/red]"
             else:
                 status_display = status
-            
+
             table.add_row(str(idx), session_id, name, status_display, test_type)
-        
+
         console.print(table)
         console.print()
-        
+
         # Option to show detailed JSON
         if console.input("\n[bold]Show detailed JSON? (y/n): [/bold]").lower() == 'y':
             syntax = Syntax(
@@ -273,7 +274,7 @@ def print_all_rfc2544_sessions() -> None:
                 line_numbers=True
             )
             console.print(syntax)
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -291,16 +292,16 @@ def print_all_sat_sessions() -> None:
             border_style="cyan"
         ))
         console.print()
-        
+
         # Fetch Y.1564 sessions
         console.rule("[bold green]Y.1564 Test Sessions[/bold green]")
         y1564_response = get_all_y1564_sessions()
         y1564_count = 0
-        
+
         if y1564_response.ok:
             y1564_content = y1564_response.json().get('content', [])
             y1564_count = len(y1564_content)
-            
+
             if y1564_content:
                 table = Table(
                     box=box.ROUNDED,
@@ -311,12 +312,12 @@ def print_all_sat_sessions() -> None:
                 table.add_column("ID", style="green", width=36)
                 table.add_column("Name", style="magenta", width=30)
                 table.add_column("Status", style="yellow", width=15)
-                
+
                 for idx, session in enumerate(y1564_content, 1):
                     session_id = str(session.get('id', 'N/A'))
                     name = session.get('name', 'N/A')
                     status = session.get('status', 'N/A')
-                    
+
                     # Color code status
                     if status.lower() in ['active', 'running']:
                         status_display = f"[green]{status}[/green]"
@@ -326,26 +327,26 @@ def print_all_sat_sessions() -> None:
                         status_display = f"[red]{status}[/red]"
                     else:
                         status_display = status
-                    
+
                     table.add_row(str(idx), session_id, name, status_display)
-                
+
                 console.print(table)
             else:
                 console.print("[yellow]No Y.1564 sessions found.[/yellow]")
         else:
             console.print("[red]Failed to fetch Y.1564 sessions.[/red]")
-        
+
         console.print()
-        
+
         # Fetch RFC2544 sessions
         console.rule("[bold blue]RFC2544 Test Sessions[/bold blue]")
         rfc2544_response = get_all_rfc2544_sessions()
         rfc2544_count = 0
-        
+
         if rfc2544_response.ok:
             rfc2544_content = rfc2544_response.json().get('content', [])
             rfc2544_count = len(rfc2544_content)
-            
+
             if rfc2544_content:
                 table = Table(
                     box=box.ROUNDED,
@@ -356,12 +357,12 @@ def print_all_sat_sessions() -> None:
                 table.add_column("ID", style="green", width=36)
                 table.add_column("Name", style="magenta", width=30)
                 table.add_column("Status", style="yellow", width=15)
-                
+
                 for idx, session in enumerate(rfc2544_content, 1):
                     session_id = str(session.get('id', 'N/A'))
                     name = session.get('name', 'N/A')
                     status = session.get('status', 'N/A')
-                    
+
                     # Color code status
                     if status.lower() in ['active', 'running']:
                         status_display = f"[green]{status}[/green]"
@@ -371,17 +372,17 @@ def print_all_sat_sessions() -> None:
                         status_display = f"[red]{status}[/red]"
                     else:
                         status_display = status
-                    
+
                     table.add_row(str(idx), session_id, name, status_display)
-                
+
                 console.print(table)
             else:
                 console.print("[yellow]No RFC2544 sessions found.[/yellow]")
         else:
             console.print("[red]Failed to fetch RFC2544 sessions.[/red]")
-        
+
         console.print()
-        
+
         # Summary
         console.print(Panel.fit(
             f"[bold]SAT Sessions Summary[/bold]\n"
@@ -390,7 +391,7 @@ def print_all_sat_sessions() -> None:
             f"Total: [cyan]{y1564_count + rfc2544_count}[/cyan]",
             border_style="cyan"
         ))
-        
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
@@ -401,7 +402,7 @@ def print_all_sat_sessions() -> None:
 
 class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom formatter for better help text layout."""
-    
+
     def __init__(self, prog, indent_increment=2, max_help_position=35, width=None):
         super().__init__(prog, indent_increment, max_help_position, width)
 
@@ -412,7 +413,7 @@ class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
 
 def build_parser() -> argparse.ArgumentParser:
     """Build and configure the argument parser."""
-    
+
     description = f"""
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                 Sensor Orchestrator API CLI Tool                         ║
@@ -420,10 +421,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 API Endpoint: {orchestrator.get_url_info()}
 """
-    
+
     epilog = """
 """
-    
+
     parser = argparse.ArgumentParser(
         prog='so.py',
         description=description,
@@ -445,11 +446,11 @@ API Endpoint: {orchestrator.get_url_info()}
 
 def add_commands(subparsers):
     """Add all subcommands to the parser."""
-    
+
     # ========================================================================
     # Echo Session Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_session_echo",
         help="Get a specific Echo session",
@@ -468,13 +469,13 @@ Echo sessions are used for network connectivity testing and basic latency measur
     # ========================================================================
     # TWAMP Session Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_session_twamp",
         help="Get a specific TWAMP session",
         description="""Fetches and displays detailed information about a specific TWAMP session.
 
-TWAMP (Two-Way Active Measurement Protocol) is used for measuring network 
+TWAMP (Two-Way Active Measurement Protocol) is used for measuring network
 performance metrics like delay, jitter, and packet loss.""",
         formatter_class=CustomHelpFormatter
     )
@@ -488,7 +489,7 @@ performance metrics like delay, jitter, and packet loss.""",
     # ========================================================================
     # Y.1564 Session Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_sessions_y1564",
         help="Get all Y.1564 test sessions",
@@ -503,7 +504,7 @@ a comprehensive methodology for turning up new carrier Ethernet services.""",
     # ========================================================================
     # RFC2544 Session Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_sessions_rfc2544",
         help="Get all RFC2544 test sessions",
@@ -518,7 +519,7 @@ including throughput, latency, frame loss, and back-to-back tests.""",
     # ========================================================================
     # SAT (Service Acceptance Testing) Commands
     # ========================================================================
-    
+
     sp = subparsers.add_parser(
         "get_sessions_sat",
         help="Get all SAT sessions (Y.1564 + RFC2544)",
@@ -538,14 +539,14 @@ a comprehensive view of all service acceptance testing activities.""",
 def main():
     """Main entry point for the CLI application."""
     parser = build_parser()
-    
+
     # Show help if no arguments provided
     if len(sys.argv) == 1:
         parser.print_help()
         return
 
     args = parser.parse_args()
-    
+
     # Execute the command if it has a function
     if hasattr(args, "func"):
         try:
@@ -554,18 +555,17 @@ def main():
                 f"[bold cyan]Connecting to:[/bold cyan] {orchestrator.get_url_info()}",
                 border_style="cyan"
             ))
-            
+
             orchestrator.login()
             args.func(args)
             orchestrator.logout()
-            
+
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user.[/yellow]")
             sys.exit(0)
         except Exception as e:
             console.print(f"\n[bold red]Unexpected error:[/bold red] {str(e)}")
             if '--debug' in sys.argv:
-                import traceback
                 traceback.print_exc()
             sys.exit(1)
     else:
