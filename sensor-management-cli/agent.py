@@ -159,11 +159,13 @@ def print_sessions_status(raw: bool = False) -> None:
             header_style="bold cyan"
         )
         table.add_column("Session ID", style="green", width=40)
+        # table.add_column("Session Type", style="green", width=30)
         table.add_column("Status", style="yellow", width=20)
         table.add_column("Status Message", style="white")
 
         for session in sessions:
             session_id = session.get('sessionId', 'N/A')
+            # session_type = session.get('sessionType', 'N/A')
             status = session.get('status', 'N/A')
             status_message = session.get('statusMessage', 'N/A')
 
@@ -208,8 +210,30 @@ def print_sessions() -> None:
             console.print("[bold red]Error:[/bold red] Failed to fetch sessions")
             utils.log_response(response)
             return
+        
+        sessions = response.json().get('data', [])
 
-        utils.log_response(response)
+        if not sessions:
+            console.print("[yellow]No sessions found.[/yellow]\n")
+            return
+
+        # Create a rich table
+        table = Table(
+            title="Sessions Status",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan"
+        )
+        table.add_column("Session ID", style="green", width=40)
+        table.add_column("Session Type", style="yellow", width=30)
+
+        for session in sessions:
+            session_id = session.get('attributes', {}).get('session', {}).get('sessionId', 'N/A')
+            session_type = session.get('attributes', {}).get('session', {}).get('sessionType', 'N/A')
+            table.add_row(session_id, session_type)
+
+        console.print(table)
+        console.print()
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
