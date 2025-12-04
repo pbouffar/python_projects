@@ -226,19 +226,32 @@ def delete_all_policies() -> None:
 def create_monitored_object(data: Dict[str, Any]):
     """Create a new monitored object."""
     url = "/api/v2/monitored-objects"
-    return send_request("POST", url, body=data)
+    response = send_request("POST", url, body=data)
+    utils.log_response(response)
+    return response
 
 
 def update_monitored_object(object_id: str, data: Dict[str, Any]):
     """Update an existing monitored object."""
     url = f"/api/v2/monitored-objects/{object_id}"
-    return send_request("PATCH", url, body=data)
+    response = send_request("PATCH", url, body=data)
+    utils.log_response(response)
+    return response
 
 
 def delete_monitored_object(object_id: str):
     """Delete a monitored object."""
     url = f"/api/v2/monitored-objects/{object_id}"
-    return send_request("DELETE", url)
+    response = send_request("DELETE", url)
+
+    if not response.ok and response.status_code == 404:
+        console.print("[yellow]No monitored objects found[/yellow]")
+        return response
+
+    if not response.ok:
+        utils.log_response(response)
+
+    return response
 
 
 def get_monitored_object(object_id: str):
@@ -259,14 +272,20 @@ def get_monitored_objects():
     url = "/api/v2/monitored-objects"
     response = send_request("GET", url)
 
+    if not response.ok and response.status_code == 404:
+        console.print("[yellow]No monitored objects found[/yellow]")
+        return response
+
     if not response.ok:
         console.print("[bold red]Error:[/bold red] Failed to fetch monitored objects")
+        utils.log_response(response)
         return response
 
     objects = response.json().get('data', [])
 
     if not objects:
         console.print("[yellow]No monitored objects found[/yellow]")
+        utils.log_response(response)
         return response
 
     # Create a rich table
@@ -296,7 +315,9 @@ def get_monitored_objects():
 def get_monitored_object_ids_with_name(data: Dict[str, Any]):
     """Get monitored object IDs filtered by name."""
     url = "/api/v2/monitored-objects/id-list"
-    return send_request("POST", url, body=data)
+    response = send_request("POST", url, body=data)
+    utils.log_response(response)
+    return response
 
 
 def get_monitored_object_stitchit(session_id: str):
@@ -331,7 +352,9 @@ def get_metadata_mapping():
 def get_all_tenant_metadata():
     """Get metadata for all tenants."""
     url = "/api/v2/tenant-metadata"
-    return send_request("GET", url)
+    response = send_request("GET", url)
+    utils.log_response(response)
+    return response
 
 
 def get_tenant_metadata(tenant_id: str):
@@ -646,6 +669,15 @@ def add_commands(subparsers):
     sp.set_defaults(func=lambda a: get_metadata_mapping())
 
     sp = subparsers.add_parser(
+        "get_all_tenant_metadata",
+        help="Get all tenant metadata",
+        description="Fetches and displays metadata for the all the tenants.",
+        formatter_class=CustomHelpFormatter
+    )
+    sp.set_defaults(func=lambda a: get_all_tenant_metadata())
+
+
+    sp = subparsers.add_parser(
         "get_tenant_metadata",
         help="Get tenant metadata",
         description="Fetches and displays metadata for the current tenant.",
@@ -708,6 +740,15 @@ You will be prompted for confirmation before deletion.""",
         formatter_class=CustomHelpFormatter
     )
     sp.set_defaults(func=lambda a: print_alerting_policies())
+
+    sp = subparsers.add_parser(
+        "delete_monitored_object",
+        help="Delete a monitored_object by id",
+        description="Delete a monitored_object by id.",
+        formatter_class=CustomHelpFormatter
+    )
+    sp.add_argument("object_id", metavar="OBJECT_ID", help="The ID of the monitored object")
+    sp.set_defaults(func=lambda a: delete_monitored_object(a.object_id))
 
     # ========================================================================
     # Verification Commands

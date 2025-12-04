@@ -24,7 +24,6 @@ from rich.syntax import Syntax
 from rich import box
 
 import utils
-from config import get_tenant_id, get_user_roles
 from config import ygw as orchestrator
 
 # Disable SSL warnings
@@ -45,10 +44,10 @@ def send_request(method: str, url: str, body: Optional[Dict] = None,
         headers = None
         if orchestrator.is_replicated():
             headers = {
-                "X-Forwarded-Tenant-Id": get_tenant_id(),
+                "X-Forwarded-Tenant-Id": orchestrator.get_tenant_id(),
                 "X-Forwarded-User-Id": "12345",
                 "X-Forwarded-User-Username": "pierre",
-                "X-Forwarded-User-Roles": get_user_roles(),
+                "X-Forwarded-User-Roles": orchestrator.get_user_roles(),
                 "X-Forwarded-User-groups": "pierres"
             }
         resp = orchestrator.send_request(method, url, body=body, params=params, headers=headers)
@@ -682,8 +681,8 @@ def main():
         if orchestrator.is_replicated():
             console.print(Panel.fit(
                 "[bold yellow]Replicated Mode Enabled[/bold yellow]\n"
-                f"Tenant ID: {get_tenant_id()}\n"
-                f"User Roles: {get_user_roles()}",
+                f"Tenant ID: {orchestrator.get_tenant_id()}\n"
+                f"User Roles: {orchestrator.get_user_roles()}",
                 border_style="yellow"
             ))
 
@@ -698,7 +697,7 @@ def main():
             # Display connection info
             info_text = f"[bold cyan]Connecting to:[/bold cyan] {orchestrator.get_url_info()}"
             if orchestrator.is_replicated():
-                info_text += f"\n[bold yellow]Replicated Mode:[/bold yellow] Tenant {get_tenant_id()}"
+                info_text += f"\n[bold yellow]Replicated Mode:[/bold yellow] Tenant {orchestrator.get_tenant_id()}"
 
             console.print(Panel.fit(info_text, border_style="cyan"))
 

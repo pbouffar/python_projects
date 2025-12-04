@@ -15,14 +15,7 @@ from orchestrator import Orchestrator
 _TENANT_ID = "94f4456d-d5d4-48f4-a5c6-69d8d2e48ced"
 _USER_ROLES = "system,skylight-admin,tenant-admin"
 
-
-def get_tenant_id():
-    return _TENANT_ID
-
-
-def get_user_roles():
-    return _USER_ROLES
-
+_TENANT_ID_DEV0 = "fcc29595-1d4c-4302-b9b9-8413d47ac940"
 
 _AGENT_CONFIG_DEV0 = OrchestratorConfig(
     name="Agent-Orchestrate",
@@ -49,6 +42,7 @@ _ANALYTICS_CONFIG_DEV0 = OrchestratorConfig(
     url="https://dev1.cisco-nso.agentslab.analytics.accedian.io",
     port="",
     replicated=False,
+    tenant_id=_TENANT_ID_DEV0,
     username="admin@datahub.com",
     password="3PKT9fhZ#33ed",
     login_api="/api/v1/auth/login",
@@ -97,10 +91,10 @@ _YGW_CONFIG_DEV1 = OrchestratorConfig(
     replicated=True
 )
 
-_AGENT_CONFIG = _AGENT_CONFIG_DEV1
-_ANALYTICS_CONFIG = _ANALYTICS_CONFIG_DEV1
-_SO_CONFIG = _SO_CONFIG_DEV1
-_YGW_CONFIG = _YGW_CONFIG_DEV1
+_AGENT_CONFIG = _AGENT_CONFIG_DEV0
+_ANALYTICS_CONFIG = _ANALYTICS_CONFIG_DEV0
+_SO_CONFIG = _SO_CONFIG_DEV0
+_YGW_CONFIG = _YGW_CONFIG_DEV0
 
 agent = Orchestrator(_AGENT_CONFIG)
 analytics = Orchestrator(_ANALYTICS_CONFIG)

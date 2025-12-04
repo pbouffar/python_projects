@@ -89,6 +89,9 @@ class Orchestrator:
     def get_tenant_id(self):
         return self.config.tenant_id
 
+    def get_user_roles(self):
+        return self.config.user_roles
+
     def _get_auth_token(self, uri):
         if len(self.token) > 1:
             for t in self.token:

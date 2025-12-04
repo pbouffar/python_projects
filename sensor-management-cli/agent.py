@@ -153,19 +153,17 @@ def print_sessions_status(raw: bool = False) -> None:
 
         # Create a rich table
         table = Table(
-            title="Sessions Status",
+            title=f"Sessions Status ({len(sessions)} total)",
             box=box.ROUNDED,
             show_header=True,
             header_style="bold cyan"
         )
         table.add_column("Session ID", style="green", width=40)
-        # table.add_column("Session Type", style="green", width=30)
         table.add_column("Status", style="yellow", width=20)
         table.add_column("Status Message", style="white")
 
         for session in sessions:
             session_id = session.get('sessionId', 'N/A')
-            # session_type = session.get('sessionType', 'N/A')
             status = session.get('status', 'N/A')
             status_message = session.get('statusMessage', 'N/A')
 
@@ -219,7 +217,7 @@ def print_sessions() -> None:
 
         # Create a rich table
         table = Table(
-            title="Sessions Status",
+            title=f"Sessions ({len(sessions)} total)",
             box=box.ROUNDED,
             show_header=True,
             header_style="bold cyan"

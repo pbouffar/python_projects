@@ -306,29 +306,18 @@ def print_all_sat_sessions() -> None:
                 table = Table(
                     box=box.ROUNDED,
                     show_header=True,
-                    header_style="bold green"
+                    header_style="bold cyan"
                 )
                 table.add_column("#", style="dim", width=4)
-                table.add_column("ID", style="green", width=36)
+                table.add_column("ID", style="green", width=4)
                 table.add_column("Name", style="magenta", width=30)
-                table.add_column("Status", style="yellow", width=15)
+                table.add_column("Description", style="yellow", width=40)
 
                 for idx, session in enumerate(y1564_content, 1):
                     session_id = str(session.get('id', 'N/A'))
-                    name = session.get('name', 'N/A')
-                    status = session.get('status', 'N/A')
-
-                    # Color code status
-                    if status.lower() in ['active', 'running']:
-                        status_display = f"[green]{status}[/green]"
-                    elif status.lower() in ['stopped', 'completed']:
-                        status_display = f"[blue]{status}[/blue]"
-                    elif status.lower() in ['failed', 'error']:
-                        status_display = f"[red]{status}[/red]"
-                    else:
-                        status_display = status
-
-                    table.add_row(str(idx), session_id, name, status_display)
+                    name = session.get('testName', 'N/A')
+                    description = session.get('testDescription', 'N/A')
+                    table.add_row(str(idx), session_id, name, description)
 
                 console.print(table)
             else:
@@ -339,7 +328,7 @@ def print_all_sat_sessions() -> None:
         console.print()
 
         # Fetch RFC2544 sessions
-        console.rule("[bold blue]RFC2544 Test Sessions[/bold blue]")
+        console.rule("[bold green]RFC2544 Test Sessions[/bold green]")
         rfc2544_response = get_all_rfc2544_sessions()
         rfc2544_count = 0
 
@@ -351,29 +340,18 @@ def print_all_sat_sessions() -> None:
                 table = Table(
                     box=box.ROUNDED,
                     show_header=True,
-                    header_style="bold blue"
+                    header_style="bold cyan"
                 )
                 table.add_column("#", style="dim", width=4)
-                table.add_column("ID", style="green", width=36)
+                table.add_column("ID", style="green", width=4)
                 table.add_column("Name", style="magenta", width=30)
-                table.add_column("Status", style="yellow", width=15)
+                table.add_column("Description", style="yellow", width=40)
 
                 for idx, session in enumerate(rfc2544_content, 1):
                     session_id = str(session.get('id', 'N/A'))
-                    name = session.get('name', 'N/A')
-                    status = session.get('status', 'N/A')
-
-                    # Color code status
-                    if status.lower() in ['active', 'running']:
-                        status_display = f"[green]{status}[/green]"
-                    elif status.lower() in ['stopped', 'completed']:
-                        status_display = f"[blue]{status}[/blue]"
-                    elif status.lower() in ['failed', 'error']:
-                        status_display = f"[red]{status}[/red]"
-                    else:
-                        status_display = status
-
-                    table.add_row(str(idx), session_id, name, status_display)
+                    name = session.get('testName', 'N/A')
+                    description = session.get('testDescription', 'N/A')
+                    table.add_row(str(idx), session_id, name, description)
 
                 console.print(table)
             else:
@@ -387,7 +365,7 @@ def print_all_sat_sessions() -> None:
         console.print(Panel.fit(
             f"[bold]SAT Sessions Summary[/bold]\n"
             f"Y.1564 Sessions: [green]{y1564_count}[/green]\n"
-            f"RFC2544 Sessions: [blue]{rfc2544_count}[/blue]\n"
+            f"RFC2544 Sessions: [green]{rfc2544_count}[/green]\n"
             f"Total: [cyan]{y1564_count + rfc2544_count}[/cyan]",
             border_style="cyan"
         ))
