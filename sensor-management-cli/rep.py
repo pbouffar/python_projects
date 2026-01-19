@@ -25,19 +25,31 @@ args = parser.parse_args()
 URL = f"https://{args.TENANT_IP}"
 URI = "/api/v1/onboarding/tenant-info"
 
-try:
-    response = requests.get(URL+URI, verify=False)
-    data = response.json()
-    if args.raw:
-        print(json.dumps(data, indent=2))
-    else:
+
+def get_tenant_info(url: str) -> dict:
+    tenant_info = {}
+    try:
+        response = requests.get(url+URI, verify=False)
+        data = response.json()
         tenant_info = {
+            "tenantUrl": url,
             "tenantId": data["data"]["attributes"]["tenantId"],
             "tenantName": data["data"]["attributes"]["tenantName"]
         }
-        output_str = f"URL:        {URL}\n" \
-                     f"tenantId:   {tenant_info.get('tenantId')}\n" \
-                     f"tenantName: {tenant_info.get('tenantName')}"
+    except requests.exceptions.ConnectionError as e:
+        tenant_info = {
+            "error": "Connection error",
+            "message": str(e)
+        }
+    return tenant_info    
+
+
+if __name__ == "__main__":
+    tenant_info = get_tenant_info(URL)
+    if args.raw:
+        print(json.dumps(tenant_info, indent=2))
+    else:
+        output_str = f"URL:        {tenant_info.get('tenantUrl')}\n" \
+                    f"tenantId:   {tenant_info.get('tenantId')}\n" \
+                    f"tenantName: {tenant_info.get('tenantName')}"
         print(output_str)
-except requests.exceptions.ConnectionError as e:
-    print(str(e))
