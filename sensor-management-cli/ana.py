@@ -37,13 +37,13 @@ console = Console()
 # Core API Request Functions
 # ============================================================================
 
-def send_request(method: str, url: str, body: Optional[Dict] = None):
+def send_request(method: str, url: str, headers: Optional[Dict] = None, body: Optional[Dict] = None):
     """Send an HTTP request and return the response."""
     try:
-        resp = orchestrator.send_request(method, url, body)
+        resp = orchestrator.send_request(method=method, uri=url, headers=headers, body=body)
         return resp
     except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+        console.print(f"[bold red]Error (exception):[/bold red] {str(e)}")
         sys.exit(1)
 
 
@@ -505,6 +505,10 @@ def get_ingestion_profiles():
     url = "/api/v2/ingestion-profiles"
     return send_request("GET", url)
 
+def patch_ingestion_profiles(id: str, data: Dict[str, Any]):
+    """Patch ingestion profiles."""
+    url = f"/api/v2/ingestion-profiles/{id}"
+    return send_request("PATCH", url, body=data)
 
 # Expected TWAMP-SF metrics
 EXPECTED_TWAMPSF_METRICS = [
@@ -515,6 +519,65 @@ EXPECTED_TWAMPSF_METRICS = [
     "jitterP95", "jitterPHi", "jitterPLo", "jitterPMi", "jitterStdDev", "lostBurstMax",
     "packetsLost", "packetsLostPct", "packetsReceived", "periodsLost", "syncQuality", "syncState"
 ]
+
+def patch_twampsf_metrics() -> None:
+    """Patch TWAMP-SF metrics to enable all expected metrics."""
+    try:
+        console.print("[cyan]Patching TWAMP-SF metrics...[/cyan]\n")
+
+        resp = get_ingestion_profiles()
+        if not resp.ok:
+            console.print("[bold red]Error:[/bold red] Failed to fetch ingestion profiles")
+            return
+
+        data = json.loads(resp.content).get('data', [])
+
+        if not data:
+            console.print("[yellow]No ingestion profiles found[/yellow]")
+            return
+
+        # Patch TWAMP-SF metrics
+        patched_metrics = set()
+        metric_list = []
+        for item in data:
+            metric_list = item.get('attributes', {}).get('metricList', [])
+            for metric_info in metric_list:
+                if metric_info['vendor'] == "accedian-twamp" and metric_info['monitoredObjectType'] == "twamp-sf":
+                    for metric in EXPECTED_TWAMPSF_METRICS:
+                        if metric_info['metric'] == metric and not metric_info['enabled']:
+                            metric_info['enabled'] = True
+                            patched_metrics.add(metric)
+                            break
+
+        if len(patched_metrics) > 0:
+            console.print(f"\n[bold yellow]Enabling {len(patched_metrics)} metric(s):[/bold yellow]")
+            for metric in patched_metrics:
+                console.print(f"  • {metric}")
+
+            # Prepare payload.
+            payload = {
+                "data": {
+                    "type": "ingestionProfiles",
+                    "id": data[0]['id'],
+                    "attributes": {
+                        "_rev": data[0]['attributes']['_rev'],
+                        "flags": None,
+                        "metricList": metric_list
+                    }
+                }
+            }
+
+            resp = patch_ingestion_profiles(data[0]['id'], payload)
+            if not resp.ok:
+                console.print("[bold red]Error:[/bold red] Failed to patch ingestion profiles")
+                return
+
+            console.print("[bold green]✓ Successfully patched TWAMP-SF metrics.[/bold green]")
+        else:
+            console.print("[bold green]✓ All TWAMP-SF metrics are already enabled.[/bold green]")
+
+    except Exception as e:
+        console.print(f"[bold red]Error (exception):[/bold red] {str(e)}")
 
 
 def verify_twampsf_metrics() -> None:
@@ -781,6 +844,21 @@ Checks {len(EXPECTED_TWAMPSF_METRICS)} metrics including:
         formatter_class=CustomHelpFormatter
     )
     sp.set_defaults(func=lambda a: verify_twampsf_metrics())
+
+
+    sp = subparsers.add_parser(
+        "patch_twampsf_metrics",
+        help="Patch TWAMP-SF metrics to enable all expected metrics",
+        description=f"""Patches TWAMP-SF metrics to enable all expected metrics.
+
+Checks {len(EXPECTED_TWAMPSF_METRICS)} metrics including:
+  • Delay metrics (avg, min, max, percentiles)
+  • Jitter metrics
+  • Packet loss metrics
+  • Synchronization metrics""",
+        formatter_class=CustomHelpFormatter
+    )
+    sp.set_defaults(func=lambda a: patch_twampsf_metrics())
 
 
 # ============================================================================

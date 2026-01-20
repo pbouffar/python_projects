@@ -51,6 +51,7 @@ def log_response(response):
     result = f"{RED}ERROR{RESET}" if not response.ok else f"{GREEN}SUCCESS{RESET}"
     print(
         f"{result}: {response.status_code} {response.request.method} {response.request.url}\n"
+        f"   {UNDERLINE}HEADERS{RESET} : {json.dumps(dict(response.request.headers), indent=4)}\n"
         f"   {UNDERLINE}REQUEST{RESET} : {req_body}\n"
         f"   {UNDERLINE}RESPONSE{RESET}: {resp_body}"
     )
